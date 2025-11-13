@@ -5,6 +5,18 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Button } from "@/workspace/ui/button";
+import { Input } from "@/workspace/ui/input";
+import { Label } from "@/workspace/ui/label";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/workspace/ui/card";
+
 // Prevent static generation - login pages should always be dynamic
 export const dynamic = "force-dynamic";
 
@@ -22,6 +34,7 @@ const LoginPage = () => {
       password: "",
     },
   });
+
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data: LoginSchema) => {
@@ -35,160 +48,79 @@ const LoginPage = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#050816",
-        padding: "1.5rem",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "380px",
-          background: "#111827",
-          borderRadius: "16px",
-          padding: "2rem",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.6)",
-          color: "#f9fafb",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "1.6rem",
-            fontWeight: 700,
-            textAlign: "center",
-            marginBottom: "0.25rem",
-          }}
-        >
-          CineRate
-        </h1>
-        <p
-          style={{
-            fontSize: "0.9rem",
-            textAlign: "center",
-            color: "#9ca3af",
-            marginBottom: "1.5rem",
-          }}
-        >
-          Log in to rate and review your favourite movies
-        </p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted px-4">
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="space-y-2 text-center">
+          <CardTitle className="text-2xl font-bold">CineRate</CardTitle>
+          <CardDescription>
+            Log in to rate and review your favourite movies 🎬
+          </CardDescription>
+        </CardHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <label
-            style={{
-              display: "block",
-              fontSize: "0.85rem",
-              marginBottom: "0.25rem",
-            }}
+        <CardContent>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+            noValidate
           >
-            Email
-          </label>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            {...form.register("email")}
-            style={{
-              width: "100%",
-              padding: "0.6rem 0.75rem",
-              borderRadius: "8px",
-              border: "1px solid #374151",
-              background: "#020617",
-              color: "#f9fafb",
-              outline: "none",
-              marginBottom: "0.9rem",
-            }}
-          />
-          {form.formState.errors.email && (
-            <p
-              style={{
-                color: "#ef4444",
-                fontSize: "0.75rem",
-                marginTop: "-0.5rem",
-                marginBottom: "0.5rem",
-              }}
+            {/* Email */}
+            <div className="space-y-1">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                {...form.register("email")}
+              />
+              {form.formState.errors.email && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                {...form.register("password")}
+              />
+              {form.formState.errors.password && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
             >
-              {form.formState.errors.email.message}
-            </p>
-          )}
+              {loading ? "Logging in..." : "Log In"}
+            </Button>
+          </form>
+        </CardContent>
 
-          <label
-            style={{
-              display: "block",
-              fontSize: "0.85rem",
-              marginBottom: "0.25rem",
-            }}
-          >
-            Password
-          </label>
-          <input
-            type="password"
-            placeholder="••••••••"
-            {...form.register("password")}
-            style={{
-              width: "100%",
-              padding: "0.6rem 0.75rem",
-              borderRadius: "8px",
-              border: "1px solid #374151",
-              background: "#020617",
-              color: "#f9fafb",
-              outline: "none",
-              marginBottom: "1.2rem",
-            }}
-          />
-          {form.formState.errors.password && (
-            <p
-              style={{
-                color: "#ef4444",
-                fontSize: "0.75rem",
-                marginTop: "-0.5rem",
-                marginBottom: "0.5rem",
-              }}
-            >
-              {form.formState.errors.password.message}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "0.65rem",
-              borderRadius: "999px",
-              border: "none",
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              background: loading ? "#4b5563" : "#eab308",
-              color: "#020617",
-              marginBottom: "0.8rem",
-            }}
-          >
-            {loading ? "Logging in..." : "Log In"}
-          </button>
-        </form>
-
-        <p
-          style={{
-            fontSize: "0.8rem",
-            textAlign: "center",
-            color: "#9ca3af",
-            marginBottom: "0.4rem",
-          }}
-        >
-          New to CineRate? <strong>Sign up</strong> to start rating.
-        </p>
-        <p
-          style={{
-            fontSize: "0.75rem",
-            textAlign: "center",
-            color: "#6b7280",
-          }}
-        ></p>
-      </div>
+        <CardFooter className="flex flex-col gap-1 text-center text-xs text-muted-foreground">
+          <p>
+            New to CineRate?{" "}
+            <span className="font-semibold text-primary">
+              Sign up
+            </span>{" "}
+            to start rating.
+          </p>
+          <p className="text-[0.7rem]">
+            *This is a UI-only login page for your DBMS project (no real
+            authentication yet).
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

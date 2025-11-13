@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "turbo build",
-    "dev": "cd apps/web && pnpm dev",
+    "build": "cd apps/web && bun run build",
+    "dev": "cd apps/web && bun dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },

@@ -10,7 +10,6 @@ export const auth = betterAuth({
     provider: "pg",
     schema: {
       ...schema,
-      user: schema.user,
     },
   }),
   emailAndPassword: {

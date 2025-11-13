@@ -1,27 +1,35 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+// Prevent static generation - login pages should always be dynamic
+export const dynamic = "force-dynamic";
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+type LoginSchema = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const form = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginSchema) => {
     setLoading(true);
 
     // For now just simulate login – later you can call your API here
     setTimeout(() => {
-      alert(
-        `Logged in as:\nEmail: ${form.email}\n(Password not shown)`
-      );
+      alert(`Logged in as:\nEmail: ${data.email}\n(Password not shown)`);
       setLoading(false);
     }, 800);
   };
@@ -69,7 +77,7 @@ const LoginPage = () => {
           Log in to rate and review your favourite movies
         </p>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           <label
             style={{
               display: "block",
@@ -80,12 +88,9 @@ const LoginPage = () => {
             Email
           </label>
           <input
-            name="email"
             type="email"
-            required
             placeholder="you@example.com"
-            value={form.email}
-            onChange={handleChange}
+            {...form.register("email")}
             style={{
               width: "100%",
               padding: "0.6rem 0.75rem",
@@ -97,6 +102,18 @@ const LoginPage = () => {
               marginBottom: "0.9rem",
             }}
           />
+          {form.formState.errors.email && (
+            <p
+              style={{
+                color: "#ef4444",
+                fontSize: "0.75rem",
+                marginTop: "-0.5rem",
+                marginBottom: "0.5rem",
+              }}
+            >
+              {form.formState.errors.email.message}
+            </p>
+          )}
 
           <label
             style={{
@@ -108,12 +125,9 @@ const LoginPage = () => {
             Password
           </label>
           <input
-            name="password"
             type="password"
-            required
             placeholder="••••••••"
-            value={form.password}
-            onChange={handleChange}
+            {...form.register("password")}
             style={{
               width: "100%",
               padding: "0.6rem 0.75rem",
@@ -125,6 +139,18 @@ const LoginPage = () => {
               marginBottom: "1.2rem",
             }}
           />
+          {form.formState.errors.password && (
+            <p
+              style={{
+                color: "#ef4444",
+                fontSize: "0.75rem",
+                marginTop: "-0.5rem",
+                marginBottom: "0.5rem",
+              }}
+            >
+              {form.formState.errors.password.message}
+            </p>
+          )}
 
           <button
             type="submit"
@@ -161,9 +187,7 @@ const LoginPage = () => {
             textAlign: "center",
             color: "#6b7280",
           }}
-        >
-          
-        </p>
+        ></p>
       </div>
     </div>
   );

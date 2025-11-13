@@ -5,9 +5,9 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { Button } from "@/workspace/ui/button";
-import { Input } from "@/workspace/ui/input";
-import { Label } from "@/workspace/ui/label";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
 import {
   Card,
   CardHeader,
@@ -15,7 +15,7 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/workspace/ui/card";
+} from "@workspace/ui/components/card";
 
 // Prevent static generation - login pages should always be dynamic
 export const dynamic = "force-dynamic";
@@ -97,11 +97,7 @@ const LoginPage = () => {
               )}
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Logging in..." : "Log In"}
             </Button>
           </form>
@@ -110,10 +106,8 @@ const LoginPage = () => {
         <CardFooter className="flex flex-col gap-1 text-center text-xs text-muted-foreground">
           <p>
             New to CineRate?{" "}
-            <span className="font-semibold text-primary">
-              Sign up
-            </span>{" "}
-            to start rating.
+            <span className="font-semibold text-primary">Sign up</span> to start
+            rating.
           </p>
           <p className="text-[0.7rem]">
             *This is a UI-only login page for your DBMS project (no real

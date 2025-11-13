@@ -53,7 +53,7 @@ const LoginPage = () => {
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-2xl font-bold">CineRate</CardTitle>
           <CardDescription>
-            Log in to rate and review your favourite movies 🎬
+            Log in to rate and review your favourite movies
           </CardDescription>
         </CardHeader>
 
@@ -110,8 +110,6 @@ const LoginPage = () => {
             rating.
           </p>
           <p className="text-[0.7rem]">
-            *This is a UI-only login page for your DBMS project (no real
-            authentication yet).
           </p>
         </CardFooter>
       </Card>

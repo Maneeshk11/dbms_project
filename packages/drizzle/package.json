@@ -5,12 +5,13 @@
   "private": true,
   "scripts": {
     "lint": "eslint . --max-warnings 0",
-    "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate",
-    "push": "drizzle-kit push",
-    "studio": "drizzle-kit studio"
+    "generate": "tsx node_modules/drizzle-kit/bin.cjs generate",
+    "migrate": "tsx node_modules/drizzle-kit/bin.cjs migrate",
+    "push": "tsx node_modules/drizzle-kit/bin.cjs push",
+    "studio": "tsx node_modules/drizzle-kit/bin.cjs studio"
   },
   "dependencies": {
+    "dotenv": "^16.4.7",
     "drizzle-kit": "^0.31.6",
     "drizzle-orm": "^0.44.7",
     "postgres": "^3.4.5"
@@ -19,6 +20,7 @@
     "@types/node": "^20.19.9",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.2"
   },
   "exports": {

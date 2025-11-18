@@ -16,6 +16,9 @@ import {
   CardContent,
   CardFooter,
 } from "@workspace/ui/components/card";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import authClient from "@/lib/auth-client";
 
 // Prevent static generation - login pages should always be dynamic
 export const dynamic = "force-dynamic";
@@ -27,6 +30,7 @@ const loginSchema = z.object({
 type LoginSchema = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
+  const router = useRouter();
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -39,16 +43,29 @@ const LoginPage = () => {
 
   const onSubmit = async (data: LoginSchema) => {
     setLoading(true);
+    try {
+      const { data: response, error } = await authClient.signIn.email({
+        email: data.email,
+        password: data.password,
+      });
 
-    // For now just simulate login – later you can call your API here
-    setTimeout(() => {
-      alert(`Logged in as:\nEmail: ${data.email}\n(Password not shown)`);
+      if (response && !error) {
+        router.push("/web-series");
+      }
+
+      if (error) {
+        console.error(error);
+        form.setError("root", {
+          message: error.message || "Invalid email or password",
+        });
+      }
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted px-4">
+    <div className="flex min-h-screen items-center justify-center bg-linear-to-b from-background to-muted px-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-2xl font-bold">CineRate</CardTitle>
@@ -97,6 +114,12 @@ const LoginPage = () => {
               )}
             </div>
 
+            {form.formState.errors.root && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.root.message}
+              </p>
+            )}
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Logging in..." : "Log In"}
             </Button>
@@ -106,11 +129,12 @@ const LoginPage = () => {
         <CardFooter className="flex flex-col gap-1 text-center text-xs text-muted-foreground">
           <p>
             New to CineRate?{" "}
-            <span className="font-semibold text-primary">Sign up</span> to start
-            rating.
+            <Link href="/signup" className="font-semibold text-primary">
+              Sign up
+            </Link>{" "}
+            to start rating.
           </p>
-          <p className="text-[0.7rem]">
-          </p>
+          <p className="text-[0.7rem]"></p>
         </CardFooter>
       </Card>
     </div>

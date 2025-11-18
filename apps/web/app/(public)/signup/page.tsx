@@ -17,6 +17,8 @@ import {
   CardContent,
   CardFooter,
 } from "@workspace/ui/components/card";
+import { useRouter } from "next/navigation";
+import authClient from "@/lib/auth-client";
 
 // keep it dynamic like login
 export const dynamic = "force-dynamic";
@@ -36,6 +38,7 @@ const signupSchema = z
 type SignupSchema = z.infer<typeof signupSchema>;
 
 const SignupPage = () => {
+  const router = useRouter();
   const form = useForm<SignupSchema>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -48,21 +51,32 @@ const SignupPage = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = (data: SignupSchema) => {
+  const onSubmit = async (data1: SignupSchema) => {
     setLoading(true);
+    try {
+      const { data, error } = await authClient.signUp.email({
+        email: data1.email,
+        password: data1.password,
+        name: data1.name,
+      });
 
-    // Fake API call for now
-    setTimeout(() => {
-      alert(
-        `Account created for:\nName: ${data.name}\nEmail: ${data.email}\n(Password not shown)`
-      );
+      if (error) {
+        console.error(error);
+        form.setError("root", {
+          message: error.message || "Failed to create account",
+        });
+      }
+
+      if (data) {
+        router.push("/login");
+      }
+    } finally {
       setLoading(false);
-      // later you can redirect to /login or home
-    }, 800);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted px-4">
+    <div className="flex min-h-screen items-center justify-center bg-linear-to-b from-background to-muted px-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-2xl font-bold">Join CineRate</CardTitle>
@@ -144,11 +158,13 @@ const SignupPage = () => {
               </p>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            {form.formState.errors.root && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.root.message}
+              </p>
+            )}
+
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Sign Up"}
             </Button>
           </form>

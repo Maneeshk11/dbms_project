@@ -4,7 +4,6 @@ import { AppSidebar } from "@/components/Appsidebar";
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@workspace/ui/components/sidebar";
 
 export default async function AuthLayout({

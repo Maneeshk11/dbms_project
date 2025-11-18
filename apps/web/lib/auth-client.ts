@@ -4,7 +4,6 @@ import {
   adminClient,
   customSessionClient,
   magicLinkClient,
-  organizationClient,
 } from "better-auth/client/plugins";
 import { nextCookies } from "better-auth/next-js";
 

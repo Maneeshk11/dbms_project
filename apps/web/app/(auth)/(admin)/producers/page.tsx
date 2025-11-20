@@ -70,21 +70,18 @@ export default function ProducersPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [producersRes, countriesRes, sessionRes] = await Promise.all([
-          fetch("/api/producers"),
-          fetch("/api/countries"),
-          getSession(),
-        ]);
-
-        if (!producersRes.ok || !countriesRes.ok) {
-          throw new Error("Failed to fetch data");
-        }
-
+        // Fetch data sequentially to avoid exhausting the database connection pool
+        const producersRes = await fetch("/api/producers");
+        if (!producersRes.ok) throw new Error("Failed to fetch producers");
         const producersData = await producersRes.json();
-        const countriesData = await countriesRes.json();
-
         setProducers(producersData);
+
+        const countriesRes = await fetch("/api/countries");
+        if (!countriesRes.ok) throw new Error("Failed to fetch countries");
+        const countriesData = await countriesRes.json();
         setCountries(countriesData);
+
+        const sessionRes = await getSession();
         setIsAdmin(
           sessionRes && "user" in sessionRes
             ? sessionRes.user?.isAdmin || false

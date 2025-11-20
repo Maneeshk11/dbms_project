@@ -155,7 +155,9 @@ export default function WebSeriesDetailPage() {
           <h1 className="text-4xl font-bold tracking-tight">
             {series.seriesName}
           </h1>
-          <p className="text-lg text-muted-foreground">{series.typeName}</p>
+          <p className="text-lg text-muted-foreground">
+            {series.typeName || "Type not specified"}
+          </p>
         </div>
       </div>
 
@@ -170,13 +172,16 @@ export default function WebSeriesDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {data.avgRating || "N/A"}
-              {data.avgRating && (
+              {data.avgRating && parseFloat(data.avgRating) > 0
+                ? data.avgRating
+                : "N/A"}
+              {data.avgRating && parseFloat(data.avgRating) > 0 && (
                 <span className="text-sm font-normal">/5.0</span>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {data.feedback.length} reviews
+              {data.feedback.length} review
+              {data.feedback.length !== 1 ? "s" : ""}
             </p>
           </CardContent>
         </Card>
@@ -222,7 +227,7 @@ export default function WebSeriesDetailPage() {
                 : "TBA"}
             </div>
             <p className="text-xs text-muted-foreground">
-              {series.countryName}
+              {series.countryName || "Country not specified"}
             </p>
           </CardContent>
         </Card>

@@ -68,21 +68,18 @@ export default function ProductionHousesPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [housesRes, countriesRes, sessionRes] = await Promise.all([
-          fetch("/api/production-houses"),
-          fetch("/api/countries"),
-          getSession(),
-        ]);
-
-        if (!housesRes.ok || !countriesRes.ok) {
-          throw new Error("Failed to fetch data");
-        }
-
+        // Fetch data sequentially to avoid exhausting the database connection pool
+        const housesRes = await fetch("/api/production-houses");
+        if (!housesRes.ok) throw new Error("Failed to fetch production houses");
         const housesData = await housesRes.json();
-        const countriesData = await countriesRes.json();
-
         setProductionHouses(housesData);
+
+        const countriesRes = await fetch("/api/countries");
+        if (!countriesRes.ok) throw new Error("Failed to fetch countries");
+        const countriesData = await countriesRes.json();
         setCountries(countriesData);
+
+        const sessionRes = await getSession();
         setIsAdmin(
           sessionRes && "user" in sessionRes
             ? sessionRes.user?.isAdmin || false

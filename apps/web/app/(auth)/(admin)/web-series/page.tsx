@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -24,7 +24,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Plus, ExternalLink } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { getSession } from "@/server/auth";
 
@@ -48,6 +48,7 @@ type SeriesType = {
 };
 
 export default function WebSeriesPage() {
+  const router = useRouter();
   const [webSeries, setWebSeries] = useState<WebSeries[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [seriesTypes, setSeriesTypes] = useState<SeriesType[]>([]);
@@ -69,25 +70,23 @@ export default function WebSeriesPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [seriesRes, countriesRes, typesRes, sessionRes] =
-          await Promise.all([
-            fetch("/api/web-series"),
-            fetch("/api/countries"),
-            fetch("/api/series-types"),
-            getSession(),
-          ]);
-
-        if (!seriesRes.ok || !countriesRes.ok || !typesRes.ok) {
-          throw new Error("Failed to fetch data");
-        }
-
+        // Fetch data sequentially to avoid exhausting the database connection pool
+        const seriesRes = await fetch("/api/web-series");
+        if (!seriesRes.ok) throw new Error("Failed to fetch web series");
         const seriesData = await seriesRes.json();
-        const countriesData = await countriesRes.json();
-        const typesData = await typesRes.json();
-
         setWebSeries(seriesData);
+
+        const countriesRes = await fetch("/api/countries");
+        if (!countriesRes.ok) throw new Error("Failed to fetch countries");
+        const countriesData = await countriesRes.json();
         setCountries(countriesData);
+
+        const typesRes = await fetch("/api/series-types");
+        if (!typesRes.ok) throw new Error("Failed to fetch series types");
+        const typesData = await typesRes.json();
         setSeriesTypes(typesData);
+
+        const sessionRes = await getSession();
         setIsAdmin(
           sessionRes && "user" in sessionRes
             ? sessionRes.user?.isAdmin || false
@@ -351,18 +350,16 @@ export default function WebSeriesPage() {
               </TableRow>
             ) : (
               webSeries.map((series) => (
-                <TableRow key={series.seriesId}>
+                <TableRow
+                  key={series.seriesId}
+                  onClick={() => router.push(`/web-series/${series.seriesId}`)}
+                  className="cursor-pointer"
+                >
                   <TableCell className="font-medium">
                     {series.seriesId}
                   </TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/web-series/${series.seriesId}`}
-                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-                    >
-                      {series.seriesName}
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
+                  <TableCell className="font-semibold">
+                    {series.seriesName}
                   </TableCell>
                   <TableCell>{series.typeName || "N/A"}</TableCell>
                   <TableCell>

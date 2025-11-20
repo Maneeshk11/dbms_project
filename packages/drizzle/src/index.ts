@@ -9,7 +9,13 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-const conn = postgres(process.env.DATABASE_URL, { prepare: false });
+const conn = postgres(process.env.DATABASE_URL, {
+  prepare: false,
+  max: 10, // Maximum number of connections in the pool
+  idle_timeout: 10, // Close idle connections after 10 seconds
+  max_lifetime: 60 * 5, // Close connections after 5 minutes
+});
+
 export const db = drizzle(conn, {
   schema: {
     ...schema,

@@ -43,12 +43,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="  dark:from-blue-950/20 dark:to-indigo-950/20">
         <div className="flex items-center gap-3 px-2 pt-3 group-data-[collapsible=icon]:p-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg">
-            <Image
+            {/* <Image
               src="/logo.svg"
               alt="Netflix Manager"
               width={28}
               height={28}
-            />
+            /> */}
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-1">

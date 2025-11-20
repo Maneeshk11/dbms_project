@@ -5,6 +5,8 @@ import {
   jhmCountry,
   jhmSeriesType,
 } from "@workspace/drizzle/jhm";
+import { auth } from "@workspace/auth/auth";
+import { headers } from "next/headers";
 
 export async function GET() {
   try {
@@ -26,6 +28,55 @@ export async function GET() {
     console.error("Error fetching web series:", error);
     return NextResponse.json(
       { error: "Failed to fetch web series" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    // Check if user is admin
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.isAdmin) {
+      return NextResponse.json(
+        { error: "Unauthorized: Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { seriesId, seriesName, releaseDate, episodeCnt, typeId, countryId } =
+      body;
+
+    // Validate required fields
+    if (!seriesId || !seriesName || !typeId || !countryId) {
+      return NextResponse.json(
+        { error: "seriesId, seriesName, typeId, and countryId are required" },
+        { status: 400 }
+      );
+    }
+
+    // Insert new web series
+    await db.insert(jhmWebSeries).values({
+      seriesId,
+      seriesName,
+      releaseDate: releaseDate || null,
+      episodeCnt: episodeCnt || null,
+      typeId,
+      countryId,
+    });
+
+    return NextResponse.json(
+      { message: "Web series created successfully" },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error creating web series:", error);
+    return NextResponse.json(
+      { error: "Failed to create web series" },
       { status: 500 }
     );
   }

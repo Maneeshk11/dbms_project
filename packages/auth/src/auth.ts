@@ -18,6 +18,15 @@ export const auth = betterAuth({
       invitation: authSchema.invitation,
     },
   }),
+  user: {
+    additionalFields: {
+      isAdmin: {
+        type: "boolean",
+        defaultValue: false,
+        required: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,

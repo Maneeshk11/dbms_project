@@ -11,6 +11,21 @@ import {
 } from "@workspace/ui/components/table";
 import { Card } from "@workspace/ui/components/card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
+import { Button } from "@workspace/ui/components/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@workspace/ui/components/dialog";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { getSession } from "@/server/auth";
 
 type WebSeries = {
   seriesId: string;
@@ -21,20 +36,62 @@ type WebSeries = {
   countryName: string;
 };
 
+type Country = {
+  countryId: string;
+  countryName: string;
+};
+
+type SeriesType = {
+  typeId: string;
+  typeName: string;
+};
+
 export default function WebSeriesPage() {
   const [webSeries, setWebSeries] = useState<WebSeries[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [seriesTypes, setSeriesTypes] = useState<SeriesType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    seriesId: "",
+    seriesName: "",
+    releaseDate: "",
+    episodeCnt: "",
+    typeId: "",
+    countryId: "",
+  });
 
   useEffect(() => {
-    async function fetchWebSeries() {
+    async function fetchData() {
       try {
-        const response = await fetch("/api/web-series");
-        if (!response.ok) {
-          throw new Error("Failed to fetch web series");
+        const [seriesRes, countriesRes, typesRes, sessionRes] =
+          await Promise.all([
+            fetch("/api/web-series"),
+            fetch("/api/countries"),
+            fetch("/api/series-types"),
+            getSession(),
+          ]);
+
+        if (!seriesRes.ok || !countriesRes.ok || !typesRes.ok) {
+          throw new Error("Failed to fetch data");
         }
-        const data = await response.json();
-        setWebSeries(data);
+
+        const seriesData = await seriesRes.json();
+        const countriesData = await countriesRes.json();
+        const typesData = await typesRes.json();
+
+        setWebSeries(seriesData);
+        setCountries(countriesData);
+        setSeriesTypes(typesData);
+        setIsAdmin(
+          sessionRes && "user" in sessionRes
+            ? sessionRes.user?.isAdmin || false
+            : false
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -42,8 +99,57 @@ export default function WebSeriesPage() {
       }
     }
 
-    fetchWebSeries();
+    fetchData();
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const payload = {
+        seriesId: formData.seriesId,
+        seriesName: formData.seriesName,
+        releaseDate: formData.releaseDate || null,
+        episodeCnt: formData.episodeCnt ? parseInt(formData.episodeCnt) : null,
+        typeId: formData.typeId,
+        countryId: formData.countryId,
+      };
+
+      const response = await fetch("/api/web-series", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create web series");
+      }
+
+      toast.success("Web series created successfully");
+      setOpen(false);
+      setFormData({
+        seriesId: "",
+        seriesName: "",
+        releaseDate: "",
+        episodeCnt: "",
+        typeId: "",
+        countryId: "",
+      });
+
+      // Refresh list
+      const seriesRes = await fetch("/api/web-series");
+      const seriesData = await seriesRes.json();
+      setWebSeries(seriesData);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -74,10 +180,150 @@ export default function WebSeriesPage() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Web Series</h1>
-        <p className="text-muted-foreground">
-          Total: {webSeries.length} series
-        </p>
+        <div>
+          <h1 className="text-3xl font-bold">Web Series</h1>
+          <p className="text-muted-foreground">
+            Total: {webSeries.length} series
+          </p>
+        </div>
+        {isAdmin && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Web Series
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <form onSubmit={handleSubmit}>
+                <DialogHeader>
+                  <DialogTitle>Create New Web Series</DialogTitle>
+                  <DialogDescription>
+                    Add a new web series to the database.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="seriesId">Series ID *</Label>
+                      <Input
+                        id="seriesId"
+                        value={formData.seriesId}
+                        onChange={(e) =>
+                          setFormData({ ...formData, seriesId: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="seriesName">Series Name *</Label>
+                      <Input
+                        id="seriesName"
+                        value={formData.seriesName}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            seriesName: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="typeId">Series Type *</Label>
+                      <select
+                        id="typeId"
+                        value={formData.typeId}
+                        onChange={(e) =>
+                          setFormData({ ...formData, typeId: e.target.value })
+                        }
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                        required
+                      >
+                        <option value="">Select a type</option>
+                        {seriesTypes.map((type) => (
+                          <option key={type.typeId} value={type.typeId}>
+                            {type.typeName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="countryId">Country *</Label>
+                      <select
+                        id="countryId"
+                        value={formData.countryId}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            countryId: e.target.value,
+                          })
+                        }
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                        required
+                      >
+                        <option value="">Select a country</option>
+                        {countries.map((country) => (
+                          <option
+                            key={country.countryId}
+                            value={country.countryId}
+                          >
+                            {country.countryName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="releaseDate">Release Date</Label>
+                      <Input
+                        id="releaseDate"
+                        type="date"
+                        value={formData.releaseDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            releaseDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="episodeCnt">Episode Count</Label>
+                      <Input
+                        id="episodeCnt"
+                        type="number"
+                        min="1"
+                        value={formData.episodeCnt}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            episodeCnt: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? "Creating..." : "Create Web Series"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Card>

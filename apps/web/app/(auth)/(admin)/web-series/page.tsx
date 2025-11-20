@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -23,7 +24,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Plus } from "lucide-react";
+import { Plus, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { getSession } from "@/server/auth";
 
@@ -354,7 +355,15 @@ export default function WebSeriesPage() {
                   <TableCell className="font-medium">
                     {series.seriesId}
                   </TableCell>
-                  <TableCell>{series.seriesName}</TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/web-series/${series.seriesId}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                    >
+                      {series.seriesName}
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </TableCell>
                   <TableCell>{series.typeName || "N/A"}</TableCell>
                   <TableCell>
                     {series.releaseDate

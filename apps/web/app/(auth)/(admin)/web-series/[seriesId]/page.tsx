@@ -563,10 +563,32 @@ export default function WebSeriesDetailPage() {
                     <div className="grid gap-4 py-4">
                       <div className="space-y-2">
                         <Label>Viewer</Label>
-                        <div className="flex h-9 w-full rounded-md border border-input bg-gray-50 px-3 py-1 text-base">
-                          {currentViewer
-                            ? `${currentViewer.firstName} ${currentViewer.lastName}`
-                            : "Loading viewer information..."}
+                        <div className="relative">
+                          <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm ring-offset-background">
+                            {currentViewer ? (
+                              <>
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium mr-3">
+                                  {currentViewer.firstName
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                  {currentViewer.lastName
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </div>
+                                <span className="font-medium text-foreground">
+                                  {currentViewer.firstName}{" "}
+                                  {currentViewer.lastName}
+                                </span>
+                                <span className="ml-auto text-xs text-muted-foreground">
+                                  You
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground italic">
+                                Loading viewer information...
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-2">

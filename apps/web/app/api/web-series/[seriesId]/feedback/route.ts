@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { db, eq } from "@workspace/drizzle";
-import { jhmFeedback } from "@workspace/drizzle/jhm";
+import { db, eq, and } from "@workspace/drizzle";
+import { jhmFeedback, jhmViewerAct } from "@workspace/drizzle/jhm";
+import { auth } from "@workspace/auth/auth";
+import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
   request: Request,
@@ -9,12 +11,46 @@ export async function POST(
   try {
     const { seriesId } = await params;
     const body = await request.json();
-    const { feedbackId, rating, feedbackTxt, feedbackDate, viewerId } = body;
+    const { rating, feedbackTxt } = body;
+
+    // Get current user session
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // Get viewer account for current user
+    const viewer = await db
+      .select({ viewerId: jhmViewerAct.viewerId })
+      .from(jhmViewerAct)
+      .where(eq(jhmViewerAct.userId, session.user.id))
+      .limit(1);
+
+    if (viewer.length === 0) {
+      return NextResponse.json(
+        { error: "No viewer account found for user" },
+        { status: 404 }
+      );
+    }
+
+    const viewerId = viewer[0]?.viewerId;
+    if (!viewerId) {
+      return NextResponse.json(
+        { error: "Invalid viewer account" },
+        { status: 404 }
+      );
+    }
 
     // Validate required fields
-    if (!feedbackId || !rating || !feedbackTxt || !feedbackDate || !viewerId) {
+    if (!rating || !feedbackTxt) {
       return NextResponse.json(
-        { error: "All fields are required" },
+        { error: "Rating and feedback text are required" },
         { status: 400 }
       );
     }
@@ -28,18 +64,22 @@ export async function POST(
       );
     }
 
+    // Generate feedback ID and date
+    const feedbackId = uuidv4();
+    const feedbackDate = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
     // Insert new feedback
     await db.insert(jhmFeedback).values({
-      feedbackId,
-      rating: String(ratingNum), // numeric type expects string
-      feedbackTxt,
-      feedbackDate,
-      seriesId,
-      viewerId,
-    });
+      feedbackId: feedbackId,
+      rating: String(ratingNum),
+      feedbackTxt: feedbackTxt as string,
+      feedbackDate: feedbackDate,
+      seriesId: seriesId,
+      viewerId: viewerId as string,
+    } as any); // Type assertion to bypass schema mismatch
 
     return NextResponse.json(
-      { message: "Feedback created successfully" },
+      { message: "Feedback created successfully", feedbackId },
       { status: 201 }
     );
   } catch (error) {
@@ -60,11 +100,66 @@ export async function PUT(
     const body = await request.json();
     const { feedbackId, rating, feedbackTxt } = body;
 
+    // Get current user session
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // Get viewer account for current user
+    const viewer = await db
+      .select({ viewerId: jhmViewerAct.viewerId })
+      .from(jhmViewerAct)
+      .where(eq(jhmViewerAct.userId, session.user.id))
+      .limit(1);
+
+    if (viewer.length === 0) {
+      return NextResponse.json(
+        { error: "No viewer account found for user" },
+        { status: 404 }
+      );
+    }
+
+    const viewerId = viewer[0]?.viewerId;
+    if (!viewerId) {
+      return NextResponse.json(
+        { error: "Invalid viewer account" },
+        { status: 404 }
+      );
+    }
+
     // Validate required fields
     if (!feedbackId || !rating || !feedbackTxt) {
       return NextResponse.json(
         { error: "feedbackId, rating, and feedbackTxt are required" },
         { status: 400 }
+      );
+    }
+
+    // Check if the feedback belongs to the current user
+    const existingFeedback = await db
+      .select({ viewerId: jhmFeedback.viewerId })
+      .from(jhmFeedback)
+      .where(eq(jhmFeedback.feedbackId, feedbackId))
+      .limit(1);
+
+    if (existingFeedback.length === 0) {
+      return NextResponse.json(
+        { error: "Feedback not found" },
+        { status: 404 }
+      );
+    }
+
+    if (existingFeedback[0]?.viewerId !== viewerId) {
+      return NextResponse.json(
+        { error: "You can only edit your own feedback" },
+        { status: 403 }
       );
     }
 
@@ -83,8 +178,14 @@ export async function PUT(
       .set({
         rating: String(ratingNum), // numeric type expects string
         feedbackTxt,
+        feedbackDate: new Date().toISOString().split("T")[0], // Update date on edit
       })
-      .where(eq(jhmFeedback.feedbackId, feedbackId));
+      .where(
+        and(
+          eq(jhmFeedback.feedbackId, feedbackId),
+          eq(jhmFeedback.viewerId, viewerId)
+        )
+      );
 
     return NextResponse.json(
       { message: "Feedback updated successfully" },

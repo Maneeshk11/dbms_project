@@ -9,6 +9,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { user } from "../auth/schema.js";
 
 // Base tables - no foreign keys
 
@@ -88,6 +89,8 @@ export const jhmViewerAct = pgTable(
   "jhm_viewer_act",
   {
     viewerId: varchar("viewer_id").primaryKey(),
+    userId: text("user_id")
+      .references(() => user.id, { onDelete: "cascade" }),
     accountId: varchar("account_id").notNull(),
     firstName: varchar("first_name").notNull(),
     lastName: varchar("last_name").notNull(),

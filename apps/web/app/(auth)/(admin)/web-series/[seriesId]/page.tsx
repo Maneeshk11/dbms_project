@@ -82,6 +82,7 @@ type WebSeriesDetail = {
     feedbackDate: string;
     viewerName: string;
     viewerLastName: string;
+    viewerId: string;
   }>;
   contracts: Array<{
     contractId: string;
@@ -108,25 +109,23 @@ export default function WebSeriesDetailPage() {
   const [data, setData] = useState<WebSeriesDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewers, setViewers] = useState<Viewer[]>([]);
+  const [currentViewer, setCurrentViewer] = useState<any>(null);
   const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
   const [viewAllOpen, setViewAllOpen] = useState(false);
   const [editFeedbackId, setEditFeedbackId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [feedbackForm, setFeedbackForm] = useState({
-    feedbackId: "",
     rating: "5",
     feedbackTxt: "",
-    viewerId: "",
   });
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [seriesRes, viewersRes] = await Promise.all([
+        const [seriesRes, viewerRes] = await Promise.all([
           fetch(`/api/web-series/${params.seriesId}`),
-          fetch("/api/viewers"),
+          fetch("/api/current-viewer"),
         ]);
 
         if (!seriesRes.ok) {
@@ -136,9 +135,9 @@ export default function WebSeriesDetailPage() {
         const result = await seriesRes.json();
         setData(result);
 
-        if (viewersRes.ok) {
-          const viewersData = await viewersRes.json();
-          setViewers(viewersData);
+        if (viewerRes.ok) {
+          const viewerData = await viewerRes.json();
+          setCurrentViewer(viewerData);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -154,15 +153,16 @@ export default function WebSeriesDetailPage() {
 
   const handleAddFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentViewer) {
+      toast.error("You need a viewer account to add feedback");
+      return;
+    }
     setSubmitting(true);
 
     try {
       const payload = {
-        feedbackId: feedbackForm.feedbackId || `FB-${Date.now()}`,
         rating: Number(feedbackForm.rating),
         feedbackTxt: feedbackForm.feedbackTxt,
-        feedbackDate: new Date().toISOString().split("T")[0],
-        viewerId: feedbackForm.viewerId,
       };
 
       const response = await fetch(
@@ -184,10 +184,8 @@ export default function WebSeriesDetailPage() {
       toast.success("Feedback added successfully");
       setAddFeedbackOpen(false);
       setFeedbackForm({
-        feedbackId: "",
         rating: "5",
         feedbackTxt: "",
-        viewerId: "",
       });
 
       // Refresh data
@@ -235,10 +233,8 @@ export default function WebSeriesDetailPage() {
       toast.success("Feedback updated successfully");
       setEditFeedbackId(null);
       setFeedbackForm({
-        feedbackId: "",
         rating: "5",
         feedbackTxt: "",
-        viewerId: "",
       });
 
       // Refresh data
@@ -257,10 +253,8 @@ export default function WebSeriesDetailPage() {
   const startEdit = (feedback: WebSeriesDetail["feedback"][0]) => {
     setEditFeedbackId(feedback.feedbackId);
     setFeedbackForm({
-      feedbackId: feedback.feedbackId,
       rating: feedback.rating,
       feedbackTxt: feedback.feedbackTxt,
-      viewerId: "",
     });
   };
 
@@ -568,29 +562,12 @@ export default function WebSeriesDetailPage() {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="viewerId">Viewer *</Label>
-                        <select
-                          id="viewerId"
-                          value={feedbackForm.viewerId}
-                          onChange={(e) =>
-                            setFeedbackForm({
-                              ...feedbackForm,
-                              viewerId: e.target.value,
-                            })
-                          }
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                          required
-                        >
-                          <option value="">Select a viewer</option>
-                          {viewers.map((viewer) => (
-                            <option
-                              key={viewer.viewerId}
-                              value={viewer.viewerId}
-                            >
-                              {viewer.firstName} {viewer.lastName}
-                            </option>
-                          ))}
-                        </select>
+                        <Label>Viewer</Label>
+                        <div className="flex h-9 w-full rounded-md border border-input bg-gray-50 px-3 py-1 text-base">
+                          {currentViewer
+                            ? `${currentViewer.firstName} ${currentViewer.lastName}`
+                            : "Loading viewer information..."}
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="rating">Rating *</Label>
@@ -629,22 +606,6 @@ export default function WebSeriesDetailPage() {
                           required
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="feedbackId">
-                          Feedback ID (Optional)
-                        </Label>
-                        <Input
-                          id="feedbackId"
-                          value={feedbackForm.feedbackId}
-                          onChange={(e) =>
-                            setFeedbackForm({
-                              ...feedbackForm,
-                              feedbackId: e.target.value,
-                            })
-                          }
-                          placeholder="Leave empty to auto-generate"
-                        />
-                      </div>
                     </div>
                     <DialogFooter>
                       <Button
@@ -653,10 +614,8 @@ export default function WebSeriesDetailPage() {
                         onClick={() => {
                           setAddFeedbackOpen(false);
                           setFeedbackForm({
-                            feedbackId: "",
                             rating: "5",
                             feedbackTxt: "",
-                            viewerId: "",
                           });
                         }}
                       >
@@ -707,13 +666,16 @@ export default function WebSeriesDetailPage() {
                         </span>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEdit(fb)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    {currentViewer &&
+                      fb.viewerId === currentViewer.viewerId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(fb)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {fb.feedbackTxt}
@@ -766,17 +728,19 @@ export default function WebSeriesDetailPage() {
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setViewAllOpen(false);
-                      startEdit(fb);
-                      setAddFeedbackOpen(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  {currentViewer && fb.viewerId === currentViewer.viewerId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setViewAllOpen(false);
+                        startEdit(fb);
+                        setAddFeedbackOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {fb.feedbackTxt}
@@ -795,10 +759,8 @@ export default function WebSeriesDetailPage() {
             if (!open) {
               setEditFeedbackId(null);
               setFeedbackForm({
-                feedbackId: "",
                 rating: "5",
                 feedbackTxt: "",
-                viewerId: "",
               });
             }
           }}
@@ -857,10 +819,8 @@ export default function WebSeriesDetailPage() {
                   onClick={() => {
                     setEditFeedbackId(null);
                     setFeedbackForm({
-                      feedbackId: "",
                       rating: "5",
                       feedbackTxt: "",
-                      viewerId: "",
                     });
                   }}
                 >

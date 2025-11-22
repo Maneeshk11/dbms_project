@@ -68,6 +68,27 @@ const SignupPage = () => {
       }
 
       if (data) {
+        try {
+          // Create viewer account for the new user
+          const viewerResponse = await fetch("/api/create-viewer", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!viewerResponse.ok) {
+            console.warn(
+              "Failed to create viewer account:",
+              await viewerResponse.text()
+            );
+            // Don't block signup if viewer creation fails
+          }
+        } catch (viewerError) {
+          console.warn("Error creating viewer account:", viewerError);
+          // Don't block signup if viewer creation fails
+        }
+
         router.push("/login");
       }
     } finally {

@@ -68,10 +68,12 @@ export default function WebSeriesPage() {
 
         // Fetch series types for filtering
         const typesRes = await fetch("/api/series-types");
+        if (!typesRes.ok) throw new Error("Failed to fetch series types");
         const typesData = await typesRes.json();
 
         // Fetch countries for filtering
         const countriesRes = await fetch("/api/countries");
+        if (!countriesRes.ok) throw new Error("Failed to fetch countries");
         const countriesData = await countriesRes.json();
 
         setWebSeries(seriesData);

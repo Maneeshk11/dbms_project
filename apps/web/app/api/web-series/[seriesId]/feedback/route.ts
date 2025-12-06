@@ -19,6 +19,7 @@ export async function GET(
         feedbackDate: jhmFeedback.feedbackDate,
         viewerName: jhmViewerAct.firstName,
         viewerLastName: jhmViewerAct.lastName,
+        viewerId: jhmFeedback.viewerId,
       })
       .from(jhmFeedback)
       .leftJoin(jhmViewerAct, eq(jhmFeedback.viewerId, jhmViewerAct.viewerId))

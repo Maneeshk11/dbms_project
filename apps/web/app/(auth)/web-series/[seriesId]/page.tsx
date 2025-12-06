@@ -41,7 +41,7 @@ type WebSeriesDetail = {
   countryName: string;
   averageRating?: number;
   totalReviews?: number;
-  description?: string; // If you add this field later
+  description?: string;
 };
 
 type Feedback = {
@@ -53,6 +53,15 @@ type Feedback = {
   viewerId: string;
 };
 
+type Episode = {
+  episodeId: string;
+  epNumber: string;
+  epTitle: string;
+  plannedStart: string | null;
+  plannedEnd: string | null;
+  viewersCount: string | null;
+};
+
 export default function SeriesDetailPage({
   params,
 }: {
@@ -61,6 +70,7 @@ export default function SeriesDetailPage({
   const { seriesId } = use(params);
   const router = useRouter();
   const [series, setSeries] = useState<WebSeriesDetail | null>(null);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +84,7 @@ export default function SeriesDetailPage({
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch series details (which includes feedback and rating)
+        // Fetch series details (which includes feedback, rating, and episodes)
         const seriesRes = await fetch(`/api/web-series/${seriesId}`);
         if (!seriesRes.ok) {
           if (seriesRes.status === 404) throw new Error("Series not found");
@@ -91,6 +101,9 @@ export default function SeriesDetailPage({
 
         // Set feedbacks from the main response
         setFeedbacks(data.feedback);
+
+        // Set episodes from the main response
+        setEpisodes(data.episodes || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -297,6 +310,61 @@ export default function SeriesDetailPage({
               <Star className="mr-2 h-4 w-4" />
               Rate & Review
             </Button>
+          </div>
+
+          {/* Episodes Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Tv className="w-5 h-5" />
+                Episodes
+              </h2>
+              <Badge variant="outline">{episodes.length} episodes</Badge>
+            </div>
+
+            <Separator />
+
+            {episodes.length === 0 ? (
+              <div className="text-center py-8 bg-muted/10 rounded-xl border border-dashed">
+                <p className="text-muted-foreground">
+                  No episodes available for this series yet.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {episodes.map((episode) => (
+                  <Card
+                    key={episode.episodeId}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary font-bold shrink-0">
+                        {episode.epNumber}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">
+                          {episode.epTitle}
+                        </h3>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                          {episode.plannedStart && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(
+                                episode.plannedStart
+                              ).toLocaleDateString()}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {episode.viewersCount || 0} viewers
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Feedback Form */}

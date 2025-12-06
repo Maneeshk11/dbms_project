@@ -31,19 +31,19 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import {
+  Plus,
+  Edit,
+  Eye,
+  Trash,
+  Film,
   ArrowLeft,
   Calendar,
-  Film,
   Globe,
   Languages,
   MessageSquare,
   Star,
   FileText,
-  Plus,
-  Edit,
-  Eye,
 } from "lucide-react";
-import { Separator } from "@workspace/ui/components/separator";
 import { toast } from "sonner";
 
 type WebSeriesDetail = {
@@ -110,15 +110,118 @@ export default function WebSeriesDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentViewer, setCurrentViewer] = useState<any>(null);
+
+  // Feedback state
   const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
   const [viewAllOpen, setViewAllOpen] = useState(false);
   const [editFeedbackId, setEditFeedbackId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
   const [feedbackForm, setFeedbackForm] = useState({
     rating: "5",
     feedbackTxt: "",
   });
+
+  // Episode state
+  const [addEpisodeOpen, setAddEpisodeOpen] = useState(false);
+  const [episodeForm, setEpisodeForm] = useState({
+    episodeId: "",
+    epNumber: "",
+    epTitle: "",
+    plannedStart: "",
+    plannedEnd: "",
+    viewersCount: "0",
+  });
+
+  const handleAddEpisode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch("/api/episodes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...episodeForm,
+          seriesId: params.seriesId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create episode");
+      }
+
+      toast.success("Episode created successfully");
+      setAddEpisodeOpen(false);
+      setEpisodeForm({
+        episodeId: "",
+        epNumber: "",
+        epTitle: "",
+        plannedStart: "",
+        plannedEnd: "",
+        viewersCount: "0",
+      });
+
+      // Refresh data
+      const res = await fetch(`/api/web-series/${params.seriesId}`);
+      const result = await res.json();
+      setData(result);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create episode"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteEpisode = async (episodeId: string) => {
+    if (!confirm("Are you sure you want to delete this episode?")) return;
+
+    try {
+      const response = await fetch(`/api/episodes?episodeId=${episodeId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete episode");
+      }
+
+      toast.success("Episode deleted successfully");
+
+      // Refresh data
+      const res = await fetch(`/api/web-series/${params.seriesId}`);
+      const result = await res.json();
+      setData(result);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete episode"
+      );
+    }
+  };
+
+  // Auto-generate episode ID when dialog opens
+  useEffect(() => {
+    if (addEpisodeOpen && data?.episodes) {
+      const fetchNextId = async () => {
+        try {
+          const res = await fetch(`/api/episodes?nextId=true`);
+          if (res.ok) {
+            const { nextId } = await res.json();
+            setEpisodeForm((prev) => ({
+              ...prev,
+              episodeId: nextId,
+              epNumber: (data.episodes.length + 1).toString(),
+            }));
+          }
+        } catch (error) {
+          console.error("Failed to fetch next episode ID:", error);
+        }
+      };
+
+      fetchNextId();
+    }
+  }, [addEpisodeOpen, data]);
 
   useEffect(() => {
     async function fetchData() {
@@ -383,57 +486,169 @@ export default function WebSeriesDetailPage() {
       </div>
 
       {/* Episodes Section */}
-      {data.episodes.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Film className="h-5 w-5" />
-              Episodes
-            </CardTitle>
-            <CardDescription>
-              Complete list of all episodes in this series
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Episode #</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Planned Start</TableHead>
-                  <TableHead>Planned End</TableHead>
-                  <TableHead className="text-right">Viewers</TableHead>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Film className="h-5 w-5" />
+                Episodes
+              </CardTitle>
+              <CardDescription>
+                Complete list of all episodes in this series
+              </CardDescription>
+            </div>
+            <Dialog open={addEpisodeOpen} onOpenChange={setAddEpisodeOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Episode
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={handleAddEpisode}>
+                  <DialogHeader>
+                    <DialogTitle>Add New Episode</DialogTitle>
+                    <DialogDescription>
+                      Create a new episode for this series
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="episodeId">Episode ID *</Label>
+                        <Input
+                          id="episodeId"
+                          value={episodeForm.episodeId}
+                          onChange={(e) =>
+                            setEpisodeForm({
+                              ...episodeForm,
+                              episodeId: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="epNumber">Episode Number *</Label>
+                        <Input
+                          id="epNumber"
+                          type="number"
+                          value={episodeForm.epNumber}
+                          onChange={(e) =>
+                            setEpisodeForm({
+                              ...episodeForm,
+                              epNumber: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="epTitle">Title *</Label>
+                      <Input
+                        id="epTitle"
+                        value={episodeForm.epTitle}
+                        onChange={(e) =>
+                          setEpisodeForm({
+                            ...episodeForm,
+                            epTitle: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="plannedStart">Start Date</Label>
+                        <Input
+                          id="plannedStart"
+                          type="date"
+                          value={episodeForm.plannedStart}
+                          onChange={(e) =>
+                            setEpisodeForm({
+                              ...episodeForm,
+                              plannedStart: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="plannedEnd">End Date</Label>
+                        <Input
+                          id="plannedEnd"
+                          type="date"
+                          value={episodeForm.plannedEnd}
+                          onChange={(e) =>
+                            setEpisodeForm({
+                              ...episodeForm,
+                              plannedEnd: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? "Creating..." : "Create Episode"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Dates</TableHead>
+                <TableHead>Viewers</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.episodes.map((episode) => (
+                <TableRow key={episode.episodeId}>
+                  <TableCell>{episode.epNumber}</TableCell>
+                  <TableCell className="font-medium">
+                    {episode.epTitle}
+                  </TableCell>
+                  <TableCell>
+                    {episode.plannedStart
+                      ? new Date(episode.plannedStart).toLocaleDateString()
+                      : "-"}
+                  </TableCell>
+                  <TableCell>{episode.viewersCount || 0}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteEpisode(episode.episodeId)}
+                    >
+                      <Trash className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.episodes.map((episode) => (
-                  <TableRow key={episode.episodeId}>
-                    <TableCell className="font-medium">
-                      {episode.epNumber}
-                    </TableCell>
-                    <TableCell>{episode.epTitle}</TableCell>
-                    <TableCell>
-                      {episode.plannedStart
-                        ? new Date(episode.plannedStart).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      {episode.plannedEnd
-                        ? new Date(episode.plannedEnd).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {episode.viewersCount
-                        ? Number(episode.viewersCount).toLocaleString()
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+              ))}
+              {data.episodes.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground"
+                  >
+                    No episodes found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Languages & Releases Row */}
       <div className="grid gap-6 md:grid-cols-2">

@@ -4,6 +4,37 @@ import { jhmFeedback, jhmViewerAct } from "@workspace/drizzle/jhm";
 import { auth } from "@workspace/auth/auth";
 import { v4 as uuidv4 } from "uuid";
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ seriesId: string }> }
+) {
+  try {
+    const { seriesId } = await params;
+
+    const feedback = await db
+      .select({
+        feedbackId: jhmFeedback.feedbackId,
+        rating: jhmFeedback.rating,
+        feedbackTxt: jhmFeedback.feedbackTxt,
+        feedbackDate: jhmFeedback.feedbackDate,
+        viewerName: jhmViewerAct.firstName,
+        viewerLastName: jhmViewerAct.lastName,
+      })
+      .from(jhmFeedback)
+      .leftJoin(jhmViewerAct, eq(jhmFeedback.viewerId, jhmViewerAct.viewerId))
+      .where(eq(jhmFeedback.seriesId, seriesId))
+      .orderBy(jhmFeedback.feedbackDate);
+
+    return NextResponse.json(feedback);
+  } catch (error) {
+    console.error("Error fetching feedback:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch feedback" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ seriesId: string }> }

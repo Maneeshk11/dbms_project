@@ -8,7 +8,7 @@ export default async function Page() {
   try {
     const session = await getSession();
     if (session && "user" in session) {
-      redirect("/dashboard");
+      redirect("/web-series");
     }
   } catch (error) {
     // If auth check fails, redirect to login

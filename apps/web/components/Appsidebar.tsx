@@ -13,34 +13,55 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@workspace/ui/components/sidebar";
-import { Building2Icon, TvIcon, UserIcon } from "lucide-react";
+import { Building2Icon, TvIcon, UserIcon, Settings } from "lucide-react";
 import Link from "next/link";
 
 import Image from "next/image";
 import { NavUser } from "./SidebarFooter";
+import { getSession } from "@/server/auth";
 
-const items = [
+const userItems = [
+  {
+    href: "/web-series",
+    title: "Web Series",
+    icon: TvIcon,
+  },
+];
+
+const adminItems = [
   {
     href: "/web-series",
     title: "Web Series",
     icon: TvIcon,
   },
   {
-    href: "/production-houses",
+    href: "/admin/production-houses",
     title: "Production Houses",
     icon: Building2Icon,
   },
   {
-    href: "/producers",
+    href: "/admin/producers",
     title: "Producers",
     icon: UserIcon,
   },
+  {
+    href: "/admin/web-series",
+    title: "Manage Series",
+    icon: Settings,
+  },
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export async function AppSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
+  const session = await getSession();
+  const isAdmin =
+    session && "user" in session ? session.user?.isAdmin || false : false;
+  const items = isAdmin ? adminItems : userItems;
+
   return (
     <Sidebar {...props} collapsible="icon">
-      <SidebarHeader className="  dark:from-blue-950/20 dark:to-indigo-950/20">
+      <SidebarHeader className="dark:from-blue-950/20 dark:to-indigo-950/20">
         <div className="flex items-center gap-3 px-2 pt-3 group-data-[collapsible=icon]:p-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg">
             {/* <Image
@@ -63,7 +84,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup key="chat">
+        <SidebarGroup key="menu">
           <SidebarGroupContent>
             <SidebarSeparator />
             <SidebarMenu className="mt-4">

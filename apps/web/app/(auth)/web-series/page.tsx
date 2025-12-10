@@ -318,7 +318,7 @@ export default function WebSeriesPage() {
                     )}
                   </div>
 
-                  /* {/* Rating display */}
+                  {/* Rating display */}
                   {/* <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {series.averageRating ? (
@@ -340,7 +340,7 @@ export default function WebSeriesPage() {
                         {series.totalReviews !== 1 ? "s" : ""}
                       </span>
                     )}
-                  </div> */} */
+                  </div> */}
                 </div>
               </CardContent>
             </Card>

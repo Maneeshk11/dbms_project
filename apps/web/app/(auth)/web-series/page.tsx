@@ -329,9 +329,9 @@ export default function WebSeriesPage() {
                           </span>
                         </>
                       ) : (
-                        <span className="text-sm text-muted-foreground">
-                          No ratings yet
-                        </span>
+                        // <span className="text-sm text-muted-foreground">
+                        //   No ratings yet
+                        // </span>
                       )}
                     </div>
                     {series.totalReviews && series.totalReviews > 0 && (
